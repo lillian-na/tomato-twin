@@ -136,9 +136,11 @@ function buildPlant(sim, gdd, seed, who){
   const nNodes = Math.max(1, Math.round(st.nodes));
   const firstNode = lowered ? Math.max(0, nNodes - Math.floor(DRAW_CAP / inter)) : 0;
 
-  // 보이는 화방: 수확이 지난 지 오래된 건 제거(적엽·수확)
-  const visTruss = st.trusses.filter(t => t.f < 1.3);
-  const lowestVisUnit = visTruss.length ? visTruss[0].k : 0;
+  // 보이는 화방 = 아직 수확이 끝나지 않았고(f<1.3), 화면에 들어오는 마디에 달린 것
+  // (줄을 내린 아래쪽 화방은 이미 수확해서 제거된 상태예요)
+  const trussNode = k => Math.min(nNodes, (k + 1) * perUnit);
+  const visTruss = st.trusses.filter(t => t.f < 1.3 && trussNode(t.k) >= firstNode);
+  const lowestVisUnit = visTruss.length ? visTruss[0].k : Math.floor(firstNode / perUnit);
 
   // ── 줄기 경로 (화방마다 살짝 지그재그) ──
   const pts = [];
@@ -185,13 +187,15 @@ function buildPlant(sim, gdd, seed, who){
 
   // ── 화방과 과실 ──
   visTruss.forEach(t => {
-    const n = Math.min(nNodes, (t.k + 1) * perUnit);
+    const n = trussNode(t.k);
     const p0 = nodeAt(n);
     const ang = t.k * 1.9 + 0.6;
     const out = new THREE.Vector3(Math.cos(ang) * 0.75, 0, Math.sin(ang) * 0.75 + 0.45).normalize();
     const nFruit = Math.max(1, t.n);
-    const load = t.size * clamp(sim.fruitWeight / 90, 0.35, 1.5);
-    const pLen = 1.1 + nFruit * 0.2;
+    // 화방 전체 무게로 휘어요 (방울토마토는 알이 많아도 가벼워서 덜 휘어요)
+    const load = t.size * clamp(nFruit * sim.fruitWeight / 500, 0.3, 1.8);
+    // 알이 많을수록 길어지지만, 뒤쪽은 촘촘하게 붙어요
+    const pLen = 1.0 + Math.min(nFruit, 7) * 0.22 + Math.max(0, nFruit - 7) * 0.07;
 
     // 화방 줄기: 과실 무게로 아래로 휘어요
     const path = [];
@@ -199,7 +203,7 @@ function buildPlant(sim, gdd, seed, who){
       const u = i/8;
       path.push(p0.clone()
         .addScaledVector(out, pLen * u)
-        .add(new THREE.Vector3(0, -(0.25 + load * 1.5) * u * u, 0)));
+        .add(new THREE.Vector3(0, -(0.3 + load * 2.2) * u * u, 0)));
     }
     const ped = new THREE.Mesh(
       new THREE.TubeGeometry(new THREE.CatmullRomCurve3(path), 10, 0.035, 5, false), mat(C_PED));
@@ -219,8 +223,8 @@ function buildPlant(sim, gdd, seed, who){
       const fi = u * 8, i0 = Math.floor(fi);
       const base = path[i0].clone().lerp(path[Math.min(8, i0+1)], fi - i0);
       const side = new THREE.Vector3(-out.z, 0, out.x);
-      base.addScaledVector(side, (j % 2 ? 1 : -1) * rx * 0.85 * (0.7 + R()*0.5));
-      base.y -= ry * 0.85;
+      base.addScaledVector(side, (j % 2 ? 1 : -1) * rx * 0.95 * (0.7 + R() * 0.5));
+      base.y -= ry * (0.8 + (j % 3) * 0.18);
       const f = new THREE.Mesh(geo, fmat);
       f.scale.set(rx, ry, rx);
       f.position.copy(base);

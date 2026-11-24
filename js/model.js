@@ -157,8 +157,10 @@ function makeSim(variety, geno, env){
 function applySourceLimit(p, env){
   // 화방 하나가 자라는 동안(= 화방 간격 기간) 만들어지는 동화산물이
   // 그 화방을 채우는 데 쓰인다고 봐요.
+  // 계수 0.0028은 광량이 넉넉한 온실(DLI 18 이상)에서 대과 품종이
+  // 제 과중을 내고, 겨울철 저광량에서는 과중이 줄도록 맞춘 값이에요.
   const daysPerTruss = p.trussGDD / Math.max(0.5, p.dGDD);
-  const cap = p.supply * daysPerTruss * p.harvested * 0.0012;   // kg/주
+  const cap = p.supply * daysPerTruss * p.harvested * 0.0028;   // kg/주
   p.sourceCap = cap;
   if (p.harvested > 0 && p.potential > cap){
     p.sinkLimited = true;

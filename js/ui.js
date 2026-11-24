@@ -231,7 +231,7 @@ function rebuild(){
   const drawH = Math.min(DRAW_CAP, Math.max(
     simB.state(day * simB.dGDD).height / 10,
     compare ? simA.state(day * simA.dGDD).height / 10 : 0));
-  Scene3D.frameTo(drawH);
+  Scene3D.frameTo(drawH, compare ? DX : 0);
   dirty = false;
 }
 
@@ -323,6 +323,43 @@ function describe(u, G){
   return `<div class="t">${title}</div><div class="w">${whoTxt} · ${Math.floor(day)}일차 · ${st.phase}</div>` +
     `<div>${body}</div>` + (gn.length ? `<div class="g">${gn.join('<br>')}</div>` : '');
 }
+
+// ───────────── 화면 너비 조절 ─────────────
+(function(){
+  const rz = $('resizer'), side = document.querySelector('.side');
+  if (!rz) return;
+  const MIN = 300, MAXR = 0.68;      // 패널 최소 폭 / 전체의 최대 비율
+  let dragging = false;
+
+  const apply = w => {
+    side.style.width = w + 'px';
+    Scene3D.resize(); drawCharts();
+    drawFruits($('fruitCanvas'), simA, simB, [variety.name.split(' ')[0], '설계']);
+  };
+  rz.addEventListener('pointerdown', e => {
+    dragging = true; rz.setPointerCapture(e.pointerId);
+    rz.classList.add('on'); document.body.style.cursor = 'col-resize';
+    e.preventDefault();
+  });
+  rz.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const w = clamp(window.innerWidth - e.clientX, MIN, window.innerWidth * MAXR);
+    apply(w);
+  });
+  const stop = e => {
+    if (!dragging) return;
+    dragging = false; rz.classList.remove('on'); document.body.style.cursor = '';
+    try { rz.releasePointerCapture(e.pointerId); } catch(_){}
+    localStorage.setItem('tt-side-w', side.offsetWidth);
+  };
+  rz.addEventListener('pointerup', stop);
+  rz.addEventListener('pointercancel', stop);
+  // 더블클릭하면 기본 너비로
+  rz.addEventListener('dblclick', () => { side.style.width = ''; Scene3D.resize(); drawCharts(); });
+  // 지난번에 조절한 너비를 기억해요
+  const saved = +localStorage.getItem('tt-side-w');
+  if (saved >= MIN && saved <= window.innerWidth * MAXR) side.style.width = saved + 'px';
+})();
 
 // ───────────── 시작 ─────────────
 buildVarietySelect(); buildGeneCards(); bindControls(); recompute(); Scene3D.resize();
