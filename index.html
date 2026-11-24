@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>온실 토마토 디지털 트윈 · 유전자 설계 시뮬레이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header>
+  <h1>🍅 온실 토마토 디지털 트윈 · 유전자 설계 시뮬레이터</h1>
+  <p>스마트팜 온실에서 품종을 고르고 유전자를 설계해 키워 보세요. 왼쪽은 기준 품종, 오른쪽은 설계 계통이에요. 줄기·잎·화방·과실에 마우스를 올리면 설명이 나와요.</p>
+</header>
+<div class="app">
+  <div class="stage">
+    <div id="view">
+      <div class="hud">
+        <div class="day" id="hudDay">0일차</div>
+        <div class="stg" id="hudStage">정식·활착기</div>
+        <div class="sub" id="hudSub"></div>
+      </div>
+      <div class="hint" id="hint">마우스를 줄기·잎·과실에 올려 보세요 · 드래그: 회전 · 휠: 확대</div>
+      <div id="tip"></div>
+    </div>
+    <div class="timeline">
+      <div class="tl-row">
+        <button class="play" id="play" title="재생">▶</button>
+        <div class="tl-wrap">
+          <input type="range" id="day" min="0" max="180" step="0.5" value="0">
+          <div class="markers" id="markers"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="side">
+    <h2>① 품종 <small>기준이 되는 포기</small></h2>
+    <select id="variety"></select>
+    <div id="varietyNote"></div>
+
+    <h2>② 유전자 설계 <small>카테고리별로 골라 조합하기</small></h2>
+    <div id="categories"></div>
+
+    <h2>③ 온실 환경 <small>스마트팜 제어값</small></h2>
+    <div class="ctrl">
+      <label><span>평균 기온</span><b id="tempV"></b></label>
+      <input type="range" id="temp" min="12" max="32" step="0.5" value="21">
+    </div>
+    <div class="ctrl">
+      <label><span>일적산광량 (DLI)</span><b id="dliV"></b></label>
+      <input type="range" id="dli" min="5" max="30" step="1" value="18">
+    </div>
+    <div class="ctrl">
+      <label><span>CO₂ 농도</span><b id="co2V"></b></label>
+      <input type="range" id="co2" min="400" max="1000" step="25" value="800">
+    </div>
+    <div class="ctrl">
+      <label><span>양액 EC</span><b id="ecV"></b></label>
+      <input type="range" id="ec" min="1.5" max="6" step="0.1" value="3">
+    </div>
+    <label class="toggle"><input type="checkbox" id="compare" checked> 기준 품종과 나란히 보기</label>
+
+    <h2>④ 결과 비교 <small>180일 재배 기준 예측값</small></h2>
+    <table id="results"></table>
+
+    <h2>⑤ 과실 모양 <small>실제 비율 · 심실 단면</small></h2>
+    <canvas id="fruitCanvas"></canvas>
+    <div id="fruitInfo"></div>
+
+    <h2>⑥ 생육 곡선</h2>
+    <canvas class="chart" id="chH"></canvas>
+    <canvas class="chart" id="chY"></canvas>
+    <div class="legend"><span class="lw">기준 품종</span><span class="lk">설계 계통</span></div>
+
+    <h2>⑦ 해석</h2>
+    <div class="expl" id="expl"></div>
+
+    <details>
+      <summary>모델은 어떻게 계산하나요?</summary>
+      <p><b>1. 적산온도.</b> 토마토 기준 온도는 10°C예요. 하루 적산온도 = <code>min(기온,30) − 10</code>을 더해서 발달 단계를 정해요.</p>
+      <p><b>2. 화방.</b> 첫 화방이 생긴 뒤 일정 적산온도마다 화방이 하나씩 더 생겨요. 온도가 높을수록 화방이 빨리 올라와요.</p>
+      <p><b>3. 생육 습성.</b> 무한신장은 화방 사이에 잎이 3장씩 생기며 끝없이 올라가고, 단단성은 화방이 정해진 수만큼 생긴 뒤 줄기가 멈춰요.</p>
+      <p><b>4. 착과.</b> 착과율은 온도(28°C 초과·15°C 미만에서 떨어짐), 광량, EC로 정해져요. 빛이 모자라면 화방이 유산돼요.</p>
+      <p><b>5. 과실 발달.</b> 개화부터 완숙까지 적산온도로 진행돼요. 비대기에 크기가 정해지고, 변색기부터는 크기 대신 당분과 색소가 쌓여요.</p>
+      <p><b>6. 동화산물 한계(source–sink).</b> 하루 공급량 = <code>광량 × CO₂ 계수</code>예요. 과실이 요구하는 양이 공급을 넘으면 과중이 줄고 당도는 조금 올라가요.</p>
+      <p><b>7. 당도.</b> 기본값에 유전자 효과를 더하고, EC가 높으면 올라가고, 과실이 클수록 희석돼요.</p>
+      <p><b>근거 수준.</b> <span class="ev ev-실측">실측</span> 해당 유전자 논문의 수치 · <span class="ev ev-대리값">대리값</span> 같은 경로 유전자의 수치 · <span class="ev ev-추정">추정</span> 관련 근거로 정한 값 · <span class="ev ev-방향만">방향만</span> 증감 방향만 확인 · <span class="ev ev-가상">가상</span> 실제 자료 없이 예시로 만든 값</p>
+    </details>
+    <p class="disc">※ 교육용 규칙 기반 모델이에요. 유전자 효과의 방향은 각 카드의 논문에 근거했지만, 계수와 온실 환경 반응식은 실제 포장 데이터로 보정한 값이 아니에요. 유전자 조합은 단순 곱셈으로 가정했어요.</p>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<!-- 프로젝트 코드: 이 순서대로 불러와야 해요 -->
+<script src="js/varieties.js"></script>
+<script src="js/genes.js"></script>
+<script src="js/model.js"></script>
+<script src="js/greenhouse3d.js"></script>
+<script src="js/plant3d.js"></script>
+<script src="js/fruit2d.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
