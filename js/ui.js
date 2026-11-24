@@ -212,20 +212,20 @@ function rebuild(){
 
   const dx = compare ? DX : 0;
   plantB = buildPlant(simB, day * simB.dGDD, 7, 'design');
-  plantB.position.set(dx, 1.0, 0); S.add(plantB);
+  plantB.position.set(dx, 0, 0); S.add(plantB);
   slabB.position.set(dx, 0, 0); strB.position.set(dx + 0.45, Scene3D.WIRE_Y/2, 0);
   const act = activeGenes();
   labelB = makeLabel(act.length ? '설계: ' + act.map(geneTag).join(' · ') : '설계 계통 (변화 없음)',
     28, act.length ? '#c2512f' : '#555');
-  labelB.position.set(dx, -1.4, 2.6); S.add(labelB);
+  labelB.position.set(dx, -3.8, 2.6); S.add(labelB);
 
   slabA.visible = strA.visible = compare;
   if (compare){
     plantA = buildPlant(simA, day * simA.dGDD, 7, 'base');
-    plantA.position.set(-dx, 1.0, 0); S.add(plantA);
+    plantA.position.set(-dx, 0, 0); S.add(plantA);
     slabA.position.set(-dx, 0, 0); strA.position.set(-dx + 0.45, Scene3D.WIRE_Y/2, 0);
     labelA = makeLabel(variety.name.split(' ')[0] + ' (기준)', 28, '#555');
-    labelA.position.set(-dx, -1.4, 2.6); S.add(labelA);
+    labelA.position.set(-dx, -3.8, 2.6); S.add(labelA);
   }
   // 카메라를 식물 키에 맞춰요
   const drawH = Math.min(DRAW_CAP, Math.max(

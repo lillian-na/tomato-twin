@@ -17,7 +17,7 @@ tomato-twin/
 ├── js/varieties.js       ★ 품종 데이터
 ├── js/genes.js           ★ 카테고리 + 유전자 데이터
 ├── js/model.js           생육 모델 (계산식)
-├── js/greenhouse3d.js    온실 장면 (구조물, 배경, 카메라)
+├── js/greenhouse3d.js    장면 (조명, 높이 눈금자, 카메라)
 ├── js/plant3d.js         토마토 식물 3D
 ├── js/fruit2d.js         과실 모양·단면 그림
 └── js/ui.js              버튼·표·그래프·툴팁
@@ -153,6 +153,7 @@ const CATEGORIES = [
 
 - [x] 품종 3가지: 레드칸, 노나리, 하인즈 1706 (+ 품종 추가 구조)
 - [x] 화면 너비 조절 (가운데 손잡이를 드래그, 더블클릭하면 기본값)
+- [x] 배경 없는 흰 화면 — 식물과 높이 눈금자만 표시
 - [x] 수량 및 초형: SP, SP5G, FW2.2, LC, FAS, SUN, OVATE
 - [x] 미질 및 영양: GLK2
 - [ ] 병해충 저항성 (Mi-1.2, Tm-2a, Ty-1, Sw-5 등)
