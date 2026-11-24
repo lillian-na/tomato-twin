@@ -5,12 +5,12 @@
  * 줄기·겹잎·화방·과실을 그려요. 1 unit = 10 cm
  *
  * 온실 재배 관행도 반영했어요
- *   · 수확이 끝난 아래쪽 화방과 잎은 제거해요(적엽).
- *   · 키가 와이어보다 커지면 줄기를 내려 유인해요(내림). 아랫부분은
- *     잎이 없는 맨 줄기로 그려요.
+ *   · 수확이 끝난 아래쪽 화방과 그 아래 잎은 제거돼요(적엽).
+ *     그래서 아랫부분은 잎이 없는 맨 줄기로 보여요.
  * ===================================================================== */
 
-const DRAW_CAP = 24;          // 그릴 수 있는 최대 높이 (24 unit = 240 cm)
+// 식물은 자라는 대로 전부 그려요 (카메라가 알아서 물러납니다).
+// 다만 수확이 끝난 아래쪽 화방과 그 아래 잎은 온실 관행대로 제거된 상태로 둬요.
 const C_STEM   = new THREE.Color(0x6f8f4a);
 const C_LEAF   = new THREE.Color(0x4a7a32);
 const C_LEAF_O = new THREE.Color(0x6d8b3e);
@@ -128,19 +128,13 @@ function buildPlant(sim, gdd, seed, who){
   const perUnit = Math.max(1, Math.round(sim.leavesPerUnit)) + 1;  // 잎 + 화방
   const inter = sim.internode / 10;                                 // unit 단위 마디 길이
   const totalH = st.height / 10;
-  const drawH = Math.min(totalH, DRAW_CAP);
-  const lowered = totalH > DRAW_CAP;
-  grp.userData.lowered = lowered;
-
-  // 그릴 마디 범위 — 키가 넘치면 위쪽만 보여요(아래는 내려 유인된 것)
   const nNodes = Math.max(1, Math.round(st.nodes));
-  const firstNode = lowered ? Math.max(0, nNodes - Math.floor(DRAW_CAP / inter)) : 0;
+  const firstNode = 0;                      // 밑동부터 끝까지 다 그려요
 
-  // 보이는 화방 = 아직 수확이 끝나지 않았고(f<1.3), 화면에 들어오는 마디에 달린 것
-  // (줄을 내린 아래쪽 화방은 이미 수확해서 제거된 상태예요)
+  // 보이는 화방 = 아직 수확이 끝나지 않은 것 (f < 1.3)
   const trussNode = k => Math.min(nNodes, (k + 1) * perUnit);
-  const visTruss = st.trusses.filter(t => t.f < 1.3 && trussNode(t.k) >= firstNode);
-  const lowestVisUnit = visTruss.length ? visTruss[0].k : Math.floor(firstNode / perUnit);
+  const visTruss = st.trusses.filter(t => t.f < 1.3);
+  const lowestVisUnit = visTruss.length ? visTruss[0].k : 0;
 
   // ── 줄기 경로 (화방마다 살짝 지그재그) ──
   const pts = [];
@@ -154,14 +148,12 @@ function buildPlant(sim, gdd, seed, who){
   const stem = new THREE.Mesh(
     new THREE.TubeGeometry(curve, Math.max(8, pts.length * 2), 0.09, 7, false),
     mat(C_STEM));
-  stem.userData = {part:'stem', height:st.height, lowered};
+  stem.userData = {part:'stem', height:st.height};
   grp.add(stem);
 
-  // 맨 아래 바닥까지 이어지는 짧은 밑동
-  if (!lowered){
-    const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 1.1, 7), mat(C_STEM));
-    foot.position.y = -0.4; grp.add(foot);
-  }
+  // 배지에 박히는 짧은 밑동
+  const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.14, 1.4, 7), mat(C_STEM));
+  foot.position.y = -0.6; grp.add(foot);
 
   const nodeAt = n => {
     const t = clamp((n - firstNode) / Math.max(1, (nNodes - firstNode)), 0, 1);

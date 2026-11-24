@@ -152,7 +152,7 @@ function updatePanels(){
   if (env.T < 15) notes.push(`기온 ${env.T}°C: 저온이라 발달이 느리고 착과도 잘 안 돼요.`);
   if (env.DLI < 12) notes.push(`광량 ${env.DLI} mol/m²·일은 겨울철 수준이에요. 빛이 모자라면 화방이 유산되고 착과 수가 줄어요. 보광등을 켜는 상황을 보려면 광량을 올려 보세요.`);
   if (env.EC > 4.5) notes.push(`EC ${env.EC} dS/m는 높은 편이에요. 과실이 작아지는 대신 당도가 올라가요. 고당도 재배에서 쓰는 방법이지만 배꼽썩음병 위험도 커져요(이 모델에는 아직 없어요).`);
-  if (B.indet && !A.indet) notes.push(`무한신장으로 바뀌어 줄기가 멈추지 않아요. 실제 온실에서는 줄기를 내려 유인(lowering)하면서 6개월 이상 수확해요. 3D에서는 위쪽 2.4 m만 보여 주고 아래쪽은 잎을 제거한 맨 줄기로 그렸어요.`);
+  if (B.indet && !A.indet) notes.push(`무한신장으로 바뀌어 줄기가 멈추지 않아요. 실제 온실에서는 줄기를 비스듬히 내려 유인(lowering)하면서 6개월 이상 수확하지만, 여기서는 키 변화를 그대로 보여 주려고 곧게 세워 그렸어요. 아래쪽은 수확이 끝나 잎과 화방을 제거한 맨 줄기예요.`);
   if (act.length) notes.push(`종합: 설계 계통의 예상 수량은 기준보다 <b>${pct(B.yield, A.yield).replace(/<[^>]+>/g, '')}</b>, 당도는 <b>${(B.brix - A.brix >= 0 ? '+' : '') + (B.brix - A.brix).toFixed(1)} °Bx</b>예요.`);
   html += notes.map(n => `<div class="note">${n}</div>`).join('');
   $('expl').innerHTML = html;
@@ -211,27 +211,36 @@ function rebuild(){
                strA = Scene3D.makeString(); strB = Scene3D.makeString(); }
 
   const dx = compare ? DX : 0;
+  // 포기가 클수록 카메라가 멀어지니 이름표도 같이 키워요
+  const labelZoom = clamp(1 + Math.max(
+    simB.state(day * simB.dGDD).height / 10,
+    compare ? simA.state(day * simA.dGDD).height / 10 : 0) / 45, 1, 2.0);
+  // 멀리서 보면 이름표가 커지니 서로 겹치지 않게 좌우로 더 벌려요
+  const labelX = dx === 0 ? 0 : dx + (labelZoom - 1) * 3.4;
   plantB = buildPlant(simB, day * simB.dGDD, 7, 'design');
-  plantB.position.set(dx, 0, 0); S.add(plantB);
-  slabB.position.set(dx, 0, 0); strB.position.set(dx + 0.45, Scene3D.WIRE_Y/2, 0);
+  plantB.position.set(dx, 1.3, 0); S.add(plantB);
+  slabB.position.set(dx, 0, 0); strB.position.x = dx + 0.5;
   const act = activeGenes();
   labelB = makeLabel(act.length ? '설계: ' + act.map(geneTag).join(' · ') : '설계 계통 (변화 없음)',
     28, act.length ? '#c2512f' : '#555');
-  labelB.position.set(dx, -3.8, 2.6); S.add(labelB);
+  labelB.position.set(labelX, -2.4, 3.2); labelB.scale.multiplyScalar(labelZoom);
+  S.add(labelB);
 
   slabA.visible = strA.visible = compare;
   if (compare){
     plantA = buildPlant(simA, day * simA.dGDD, 7, 'base');
-    plantA.position.set(-dx, 0, 0); S.add(plantA);
-    slabA.position.set(-dx, 0, 0); strA.position.set(-dx + 0.45, Scene3D.WIRE_Y/2, 0);
+    plantA.position.set(-dx, 1.3, 0); S.add(plantA);
+    slabA.position.set(-dx, 0, 0); strA.position.x = -dx + 0.5;
     labelA = makeLabel(variety.name.split(' ')[0] + ' (기준)', 28, '#555');
-    labelA.position.set(-dx, -3.8, 2.6); S.add(labelA);
+    labelA.position.set(-labelX, -2.4, 3.2); labelA.scale.multiplyScalar(labelZoom);
+    S.add(labelA);
   }
-  // 카메라를 식물 키에 맞춰요
-  const drawH = Math.min(DRAW_CAP, Math.max(
+  // 카메라와 유인 와이어를 식물 키에 맞춰요
+  const topH = Math.max(
     simB.state(day * simB.dGDD).height / 10,
-    compare ? simA.state(day * simA.dGDD).height / 10 : 0));
-  Scene3D.frameTo(drawH, compare ? DX : 0);
+    compare ? simA.state(day * simA.dGDD).height / 10 : 0) + 1.3;
+  Scene3D.setCanopy(topH);
+  Scene3D.frameTo(topH, compare ? DX : 0);
   dirty = false;
 }
 
@@ -287,7 +296,7 @@ function describe(u, G){
     body += sim.indet
       ? '무한신장이라 끝눈이 화방이 된 뒤에도 바로 아래 곁눈이 줄기를 이어받아 계속 올라가요(가축분지, sympodial).'
       : `단단성이에요. 화방이 ${sim.maxUnits}개쯤 생기면 줄기 끝이 화방으로 끝나면서 생장이 멈춰요.`;
-    if (u.lowered) body += '<br>와이어보다 키가 커져서 줄기를 내려 유인했어요. 아래쪽은 잎을 제거한 맨 줄기예요.';
+    body += '<br>아래쪽은 수확이 끝나 잎과 화방을 제거한 부분이에요(적엽).';
     if (st.terminated) body += '<br>지금은 줄기 끝이 화방으로 끝나 더 자라지 않아요.';
     gn = gnotes('stem');
   }
