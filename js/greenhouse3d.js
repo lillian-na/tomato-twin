@@ -184,10 +184,10 @@ const Scene3D = (function(){
     } else {
       // 휠로 지정한 목표를 향해 부드럽게 (프레임마다 조금씩)
       if (panY !== null){
-        const dy = (panY - controls.target.y) * 0.16;
+        const dy = (panY - controls.target.y) * 0.10;
         if (Math.abs(dy) > 1e-4){ controls.target.y += dy; camera.position.y += dy; }
       }
-      wantD_apply(0.16);
+      wantD_apply(0.10);
     }
     // 안개는 보고 있는 거리에 맞춰요 — 얼마나 축소해도 식물은 또렷하게 보여요
     const d = camera.position.distanceTo(controls.target);
